@@ -1,2 +1,1 @@
-# gcmc
-Graph Convolution Matrix Completition
+# Graph Convolution Matrix Completition
