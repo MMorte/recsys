@@ -1,8 +1,6 @@
-==============================
+# Graph Convolution Matrix Completition
 
-Graph Convolution Matrix Completition
-
-Project Organization
+## Project Organization
 ------------
 
     ├── LICENSE
