@@ -1,4 +1,4 @@
-# Graph Convolution Matrix Completition
+# Neural Collaborative Filtering
 
 ## Project Organization
 ------------
