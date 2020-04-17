@@ -12,13 +12,22 @@ class Dataset:
         np.int32, array/column containing item ids
     ratings : np.ndarray
         np.float32, array/column containing ratings
+    timestamps : np.ndarray, optional
+        np.int64, array/column containing timestamps
     """
 
-    def __init__(self, user_ids: np.ndarray, item_ids: np.ndarray, ratings: np.ndarray):
+    def __init__(
+        self,
+        user_ids: np.ndarray,
+        item_ids: np.ndarray,
+        ratings: np.ndarray,
+        timestamps=np.ndarray,
+    ):
         # Load dataset
         self.user_ids = user_ids
         self.item_ids = item_ids
         self.ratings = ratings
+        self.timestamps = timestamps
         # Load dataset information for __repr__, __len__
         self.num_users = np.unique(user_ids).shape[0]
         self.num_items = np.unique(item_ids).shape[0]
