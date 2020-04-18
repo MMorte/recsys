@@ -29,8 +29,8 @@ class Dataset:
         self.ratings = ratings
         self.timestamps = timestamps
         # Load dataset information for __repr__, __len__
-        self.n_users = np.unique(user_ids).shape[0]
-        self.n_items = np.unique(item_ids).shape[0]
+        self.n_users = user_ids.max() + 1
+        self.n_items = item_ids.max() + 1
         self.n_ratings = ratings.shape[0]
 
     def __repr__(self):
