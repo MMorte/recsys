@@ -21,7 +21,7 @@ class Dataset:
         user_ids: np.ndarray,
         item_ids: np.ndarray,
         ratings: np.ndarray,
-        timestamps=np.ndarray,
+        timestamps: np.ndarray = None,
     ):
         # Load dataset
         self.user_ids = user_ids
