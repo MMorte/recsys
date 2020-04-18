@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from typing import Any
 
 
 def ifnone(a: Any, b: Any) -> Any:
@@ -18,7 +19,7 @@ def ifnone(a: Any, b: Any) -> Any:
     return b if a is None else a
 
 
-def trunc_normal_(x: Tensor, mean: float = 0.0, std: float = 1.0) -> Tensor:
+def trunc_normal_(x: torch.tensor, mean: float = 0.0, std: float = 1.0) -> torch.tensor:
     "Truncated normal initialization."
     # From https://discuss.pytorch.org/t/implementing-truncated-normal-initializer/4778/12
     return x.normal_().fmod_(2).mul_(std).add_(mean)
