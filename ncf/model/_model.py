@@ -67,9 +67,9 @@ class CollaborativeFiltering:
         self,
         n_factors: int = 32,
         n_epochs: int = 30,
-        learning_rate: float = 1e-2,
+        learning_rate: float = 1e-3,
         batch_size: int = 256,
-        weight_decay: float = 0.0,
+        weight_decay: float = 1e-4,
         model: torch.nn.Module = EmbeddingNet,
         loss: "loss_function" = RMSELoss,
         optimizer: torch.optim.Optimizer = torch.optim.Adam,
@@ -143,7 +143,6 @@ class CollaborativeFiltering:
             self._initialize(data=data)
         # Begin training
         for epoch in range(self.n_epochs):
-            # Print loss every 10th epoch
             epoch_loss = 0.0
             # Get random permutation each epoch for shuffle
             # See: https://stackoverflow.com/questions/45113245/how-to-get-mini-batches-in-pytorch-in-a-clean-and-efficient-way
@@ -170,10 +169,10 @@ class CollaborativeFiltering:
 
             # Scale loss and print
             n_batches = dim // self.batch_size + dim % self.batch_size
-            epoch_loss /= n_batches
+            self.current_loss = epoch_loss / n_batches
             if verbose:
                 if epoch % 5 == 0:
-                    print(f"Epoch {epoch}: loss {epoch_loss}")
+                    print(f"Epoch {epoch}: loss {self.current_loss}")
 
     def evaluate(self, data: Dataset):
         """Calculate RMSELoss on the test set.
