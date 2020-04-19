@@ -1,3 +1,4 @@
+import torch
 import numpy as np
 
 
@@ -29,8 +30,8 @@ class Dataset:
         self.ratings = ratings
         self.timestamps = timestamps
         # Load dataset information for __repr__, __len__
-        self.n_users = user_ids.max() + 1
-        self.n_items = item_ids.max() + 1
+        self.n_users = user_ids.max()
+        self.n_items = item_ids.max()
         self.n_ratings = ratings.shape[0]
 
     def __repr__(self):
@@ -39,3 +40,17 @@ class Dataset:
 
     def __len__(self):
         return self.n_ratings
+
+    def to_tensor(self):
+        """Convert input numpy arrays to tensors and setup proper device (GPU if available).
+        """
+        # Setup GPU if available, else use CPU
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        # Convert inputs and ratings to tensors
+        user_ids = torch.from_numpy(self.user_ids).to(torch.int64).to(device)
+        item_ids = torch.from_numpy(self.item_ids).to(torch.int64).to(device)
+        ratings = torch.from_numpy(self.ratings).to(device)
+        timestamps = torch.from_numpy(self.timestamps).to(device)
+        return Dataset(
+            user_ids=user_ids, item_ids=item_ids, ratings=ratings, timestamps=timestamps
+        )
