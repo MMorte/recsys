@@ -23,19 +23,47 @@ class Dataset:
         item_ids: np.ndarray,
         ratings: np.ndarray,
         timestamps: np.ndarray = None,
+        n_users: int = None,
+        n_items: int = None,
+        n_ratings: int = None,
     ):
         # Load dataset
         self.user_ids = user_ids
         self.item_ids = item_ids
         self.ratings = ratings
         self.timestamps = timestamps
-        # Load dataset information for __repr__, __len__
-        self.n_users = user_ids.max()
-        self.n_items = item_ids.max()
-        self.n_ratings = ratings.shape[0]
+
+        # Load dataset dimensions
+        self.n_users = n_users
+        self.n_items = n_items
+        self.n_ratings = n_ratings
+
+        # Load input (users, items) dimensions and map user/items to integers
+        # Otherwise the dimensions (user count, item count, ...)
+        # Which leads to inproper Embedding shapes
+        if n_users is None or n_items is None:
+            self.u_mapping = {
+                old: new for new, old in enumerate(np.unique(self.user_ids))
+            }
+            self.i_mapping = {
+                old: new for new, old in enumerate(np.unique(self.item_ids))
+            }
+
+            # New input ids, list-comprehension since theres no .map() for numpy
+            # See: https://stackoverflow.com/questions/35215161/most-efficient-way-to-map-function-over-numpy-array
+            self.user_ids = np.array([self.u_mapping[u_i] for u_i in self.user_ids])
+            self.item_ids = np.array([self.i_mapping[i_i] for i_i in self.item_ids])
+
+            # Load dataset information for model, __repr__, __len__, ...
+            self.n_users = self.user_ids.max() + 1  # indexing from 0 thus:
+            self.n_items = self.item_ids.max() + 1  # nn.Embedding(shape+1, n_factors)
+
+        # Ratings loaded separately (due to different loading)
+        if n_ratings is None:
+            self.n_ratings = ratings.shape[0]
 
     def __repr__(self):
-        representation = f"Dataset contains {self.n_users} users, {self.n_items} items and {self.n_ratings} interactions."
+        representation = f"Data(users={self.n_users}, items={self.n_items}, interactions={self.n_ratings})"
         return representation
 
     def __len__(self):
@@ -50,7 +78,16 @@ class Dataset:
         user_ids = torch.from_numpy(self.user_ids).to(torch.int64).to(device)
         item_ids = torch.from_numpy(self.item_ids).to(torch.int64).to(device)
         ratings = torch.from_numpy(self.ratings).to(device)
-        timestamps = torch.from_numpy(self.timestamps).to(device)
+        if self.timestamps is None:
+            timestamps = None
+        else:
+            timestamps = torch.from_numpy(self.timestamps).to(device)
         return Dataset(
-            user_ids=user_ids, item_ids=item_ids, ratings=ratings, timestamps=timestamps
+            user_ids=user_ids,
+            item_ids=item_ids,
+            ratings=ratings,
+            timestamps=timestamps,
+            n_users=self.n_users,
+            n_items=self.n_items,
+            n_ratings=self.n_ratings,
         )

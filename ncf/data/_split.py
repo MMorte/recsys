@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Any, Tuple
 from ._dataset import Dataset
+from ._utils import array_or_none
 
 
 def train_test_split(
@@ -49,13 +50,17 @@ def train_test_split(
         user_ids=data.user_ids[train_indices],
         item_ids=data.item_ids[train_indices],
         ratings=data.ratings[train_indices],
-        timestamps=data.timestamps[train_indices],
+        timestamps=array_or_none(array=data.timestamps, indexer=train_indices),
+        n_users=data.n_users,
+        n_items=data.n_items,
     )
 
     test = Dataset(
         user_ids=data.user_ids[test_indices],
         item_ids=data.item_ids[test_indices],
         ratings=data.ratings[test_indices],
-        timestamps=data.timestamps[test_indices],
+        timestamps=array_or_none(array=data.timestamps, indexer=test_indices),
+        n_users=data.n_users,
+        n_items=data.n_items,
     )
     return train, test

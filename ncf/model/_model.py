@@ -1,4 +1,5 @@
 import torch
+import logging
 import numpy as np
 from typing import Tuple
 from ._utils import Embedding
@@ -43,17 +44,10 @@ class EmbeddingNet(torch.nn.Module):
         ]
 
     def forward(self, users: torch.LongTensor, items: torch.LongTensor) -> torch.Tensor:
-        # Create indices
-        user_indices = users - 1
-        item_indices = items - 1
         # User-item dot product
-        dot = self.u_weight(user_indices) * self.i_weight(item_indices)
+        dot = self.u_weight(users) * self.i_weight(items)
         # Add bias
-        res = (
-            dot.sum(1)
-            + self.u_bias(user_indices).squeeze()
-            + self.i_bias(item_indices).squeeze()
-        )
+        res = dot.sum(1) + self.u_bias(users).squeeze() + self.i_bias(items).squeeze()
         # Scale if y_range is specified
         if self.y_range is None:
             return res
@@ -85,6 +79,7 @@ class CollaborativeFiltering:
         self.model = model
         self.loss = loss
         self.optimizer = optimizer
+        self.y_range = y_range
 
         # Fetch device (gpu/cpu)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -105,7 +100,7 @@ class CollaborativeFiltering:
             n_factors=self.n_factors,
             n_users=data.n_users,
             n_items=data.n_items,
-            y_range=(0.0, 5.0),
+            y_range=self.y_range,
         ).to(self.device)
         self.criterion = self.loss()
         self.optimizer = self.optimizer(
@@ -129,7 +124,12 @@ class CollaborativeFiltering:
         verbose : np.bool, optional
             Whether to print value of loss each Nth (5th) epoch, by default False
         """
-
+        # Logger
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(asctime)s - %(message)s",
+            datefmt="%d-%b-%y %H:%M:%S",
+        )
         # Convert data to tensors
         data = data.to_tensor()
         # Get users, items, ratings
@@ -162,6 +162,8 @@ class CollaborativeFiltering:
                 loss = self.criterion(pred, batch_ratings)
                 epoch_loss += loss.item()
 
+                # Debugging info
+                logging.info(f"Curent loss: {loss.item()}")
                 # Zero gradients, perform a backward pass, and update the weights.
                 self.optimizer.zero_grad()
                 loss.backward()
