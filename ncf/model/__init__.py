@@ -1,4 +1,4 @@
-from ._model import CollaborativeFiltering
+from ._model import EmbeddingNet
+from ._learner import Learner
 
-__all__ = ["CollaborativeFiltering"]
-
+__all__ = ["EmbeddingNet"]
