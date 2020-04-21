@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 
 from typing import Tuple
 from torch.utils.data import DataLoader, SubsetRandomSampler
+from torch.optim.lr_scheduler import OneCycleLR
+from torch.optim import Adam, SGD
 from ncf.model._utils import ExponentialLR
 from ncf.data import CollaborativeFilteringDataset
 from ncf.model import EmbeddingNet
@@ -15,21 +17,19 @@ class Learner:
         data: CollaborativeFilteringDataset,
         model: torch.nn.Module = EmbeddingNet,
         criterion=torch.nn.MSELoss,
-        optimizer: torch.optim.Optimizer = torch.optim.Adam,
+        optimizer: torch.optim.Optimizer = Adam,
         learning_rate: float = 1e-7,
         n_factors: int = 32,
         n_epochs: int = 5,
         batch_size: int = 64,
         y_range: Tuple[float, float] = None,
-        weight_decay: float = 0,
+        weight_decay: float = 0.0,
+        momentum: float = 0.9,
         random_state: int = None,
         num_workers: int = 2,
     ):
         # Data, model, loss function and optimizer
         self.data = data
-        self.model = model
-        self.criterion = criterion
-        self.optimizer = optimizer
 
         # Load hyperparameters
         self.learning_rate = learning_rate
@@ -38,30 +38,46 @@ class Learner:
         self.batch_size = batch_size
         self.y_range = y_range
         self.weight_decay = weight_decay
+        self.momentum = momentum
+
+        # Initiate model, optimizer and loss function
+        self._init_model(model=model, optimizer=optimizer, criterion=criterion)
 
         # Utilities
         self.random_state = random_state
         self.num_workers = num_workers
 
-        # Initiate model, optimizer and loss function
-        self._init_model()
-
         # Obtain train, valid loaders
         self.train_loader, self.valid_loader = self._train_val_split()
 
-    def _init_model(self):
-        """Initialize 
+    def _init_model(
+        self,
+        model: torch.nn.Module,
+        optimizer: torch.optim.Optimizer,
+        criterion: torch.nn.MSELoss,
+    ):
+        """Data for the model initialization
         
         Parameters
         ----------
-        data : Dataset
-            Data for the model initialization
+        model : torch.nn.Module
+            Same as __init__
+        optimizer : torch.optim.Optimizer
+            Same as __init__
+        criterion : torch.nn.MSELoss
+            Same as __init__
         """
+        # Same vars for lazy loading
+        self.model_, self.optimizer_, self.criterion_ = (
+            model,
+            optimizer,
+            criterion,
+        )
         # Fetch device (gpu/cpu)
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         # Model
-        self.model = self.model(
+        self.model = model(
             n_factors=self.n_factors,
             n_users=self.data.n_users,
             n_items=self.data.n_items,
@@ -71,14 +87,21 @@ class Learner:
         self.model = self.model.to(self.device)
 
         # Criterion
-        self.criterion = self.criterion()
+        self.criterion = criterion()
 
         # Optimizer
-        self.optimizer = self.optimizer(
-            params=self.model.parameters(),
-            lr=self.learning_rate,
-            weight_decay=self.weight_decay,
-        )
+        if optimizer == Adam:
+            self.optimizer = optimizer(
+                params=self.model.parameters(),
+                lr=self.learning_rate,
+                weight_decay=self.weight_decay,
+            )
+        elif optimizer == SGD:
+            self.optimizer = optimizer(
+                params=self.model.parameters(),
+                lr=self.learning_rate,
+                momentum=self.momentum,
+            )
 
     def _train_val_split(
         self, valid_size: float = 0.1, shuffle: bool = True
@@ -181,6 +204,8 @@ class Learner:
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
+                if (batch_num != 0) and (batch_num % 200 == 0):
+                    print(f"Epoch {epoch}, batch {batch_num}: {epoch_loss/batch_num}")
 
             # Update learning rate
             scheduler.step()
@@ -188,7 +213,6 @@ class Learner:
 
             # Divide by count of batches for correct loss
             epoch_loss /= batch_num
-            print(f"Epoch: {epoch} loss: {epoch_loss}")
 
             # Track the best loss and smooth it if smooth_f is specified
             if epoch == 0:
@@ -208,41 +232,76 @@ class Learner:
                 print("Stopping early, the loss has diverged")
                 break
 
-        print("Learning rate search finished. See the graph with {finder_name}.plot()")
+        print(
+            "Learning rate search finished. See the graph with {Visualizer}.plot_lr_finder()"
+        )
 
-    def plot(self, skip_start: int = 10, skip_end: int = 2):
-        """Plots the learning rate range test.
-        
-        Parameters
-        ----------
-        skip_start : int, optional
-            Number of batches to trim from the start, by default 10
-        skip_end : int, optional
-            Number of batches to trim from the start, by default 2
-        
-        Returns
-        -------
-        matplotlib.axes.Axes
-            Object that contains the plot
-        """
-        # Load data for plotting
-        lrs = self.history["lr"]
-        losses = self.history["loss"]
+    def fit(self, learning_rate: Tuple[float, float]):
+        # Update learning rates
+        min_lr = learning_rate[0]
+        max_lr = learning_rate[1]
+        self.learning_rate = min_lr
+        # Capture learning errors
+        self.train_val_error = {"train": [], "validation": [], "lr": []}
+        self._init_model(
+            model=self.model_, optimizer=self.optimizer_, criterion=self.criterion_
+        )
 
-        # Trim plot
-        if skip_start > 0:
-            lrs, losses = lrs[skip_start:], losses[skip_start:]
-        if skip_end > 0:
-            lrs, losses = lrs[:-skip_end], losses[:-skip_end]
+        # Setup one cycle policy
+        scheduler = OneCycleLR(
+            optimizer=self.optimizer,
+            max_lr=max_lr,
+            steps_per_epoch=len(self.train_loader),
+            epochs=self.n_epochs,
+            anneal_strategy="cos",
+        )
 
-        # Create plot
-        fig, ax = plt.subplots()
+        # Iterate over epochs
+        for epoch in range(self.n_epochs):
+            # Training set
+            self.model.train()
+            train_loss = 0
+            for batch_num, samples in enumerate(self.train_loader):
+                # Forward pass, get loss
+                loss = self._forward_pass(samples=samples)
+                train_loss += loss.item()
 
-        # Plot loss as a function of the learning rate
-        ax.plot(lrs, losses)
-        ax.set_xscale("log")
-        ax.set_xlabel("Learning rate")
-        ax.set_ylabel("Loss")
-        if fig is not None:
-            plt.show()
-        return ax
+                # Zero gradients, perform a backward pass, and update the weights.
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
+
+                # Update scheduler
+                self.train_val_error["lr"].append(scheduler.get_lr()[0])
+                # One cycle scheduler must be called per batch
+                # https://pytorch.org/docs/stable/optim.html#torch.optim.lr_scheduler.OneCycleLR
+                scheduler.step()
+
+            # Append train loss per current epoch
+            train_err = train_loss / batch_num
+            self.train_val_error["train"].append(train_err)
+
+            # Validation set
+            self.model.eval()
+            validation_loss = 0
+            for batch_num, samples in enumerate(self.valid_loader):
+                # Forward pass, get loss
+                loss = self._forward_pass(samples=samples)
+                validation_loss += loss.item()
+            # Append validation loss per current epoch
+            val_err = validation_loss / batch_num
+            self.train_val_error["validation"].append(val_err)
+
+            # Debugging
+            print(
+                f"Epoch: {epoch + 1}\nTrain loss: {train_err}\nValidation loss: {val_err}.\n"
+            )
+
+    def _forward_pass(self, samples: Tuple[torch.Tensor, torch.Tensor, torch.Tensor]):
+        # Fetch tensors for users, items and ratings
+        users, items, ratings = samples
+
+        # Forward pass
+        pred = self.model(users=users, items=items)
+        loss = self.criterion(pred, ratings)
+        return loss
