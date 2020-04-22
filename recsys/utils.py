@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from typing import Tuple
-from ncf.data import CollaborativeFilteringDataset
+from recsys.data import CollaborativeFilteringDataset
 
 
 class Books:

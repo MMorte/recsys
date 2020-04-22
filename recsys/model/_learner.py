@@ -7,10 +7,10 @@ from typing import Tuple
 from torch.utils.data import DataLoader, SubsetRandomSampler
 from torch.optim.lr_scheduler import OneCycleLR
 from torch.optim import Adam, SGD
-from ncf.model._utils import ExponentialLR
-from ncf.data import CollaborativeFilteringDataset
-from ncf.model import EmbeddingNet
-from ncf.visualization import Visualizer
+from recsys.model._utils import ExponentialLR
+from recsys.data import CollaborativeFilteringDataset
+from recsys.model import EmbeddingNet
+from recsys.visualization import Visualizer
 
 
 class Learner:

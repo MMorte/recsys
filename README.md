@@ -1,52 +1,65 @@
-# Neural Collaborative Filtering
+# Recommender system
+Recommender system made in PyTorch. 
+
+## Datasets
+[MovieLens dataset](https://grouplens.org/datasets/movielens/) with 100k ratings. <br>
+[Book crossing dataset](http://www2.informatik.uni-freiburg.de/~cziegler/BX/).
+
+## Training a model
+<pre><code># Load modules for training
+>>> from ncf.data import CollaborativeFilteringDataset
+>>> from ncf.model import Learner
+
+# Create a PyTorch DataLoader from csv
+>>> data = CollaborativeFilteringDataset(dataset='ml-100k')
+
+# Initiate learner class
+>>> learn = Learner(n_epochs=5, data=data, y_range=(0.,5.5), weight_decay=5e-4)
+
+# Use learning rate finder to figure a good learning rate
+>>> learn.lr_find()
+Stopping early, the loss has diverged
+Learning rate search finished. See the graph with {Learner}.visualize.lr_finder()
+>>> learn.visualize.lr_finder()
+</code></pre>
+![Learning rate finder](img/lr_finder.PNG)
+<pre><code># Fit the model
+learn.fit(learning_rate=5e-3</code>)</pre>
+
+| Epoch | Train error | Validation error |
+| ----- | ----------- | ---------------- |
+| 1     | 1.369717    | 1.011008         |
+| 2     | 0.921441    | 0.910910         |
+| 3     | 0.857178    | 0.885235         |
+| 4     | 0.830054    | 0.874283         |
+| 5     | 0.801997    | 0.870345         |
+
+
+
 
 ## Project Organization
 ------------
-
     ├── LICENSE
-    ├── Makefile           <- Makefile with commands like `make data` or `make train`
-    ├── README.md          <- The top-level README for developers using this project.
+    ├── README.md          
     ├── data
-    │   ├── external       <- Data from third party sources.
-    │   ├── interim        <- Intermediate data that has been transformed.
-    │   ├── processed      <- The final, canonical data sets for modeling.
-    │   └── raw            <- The original, immutable data dump.
-    │
-    ├── docs               <- A default Sphinx project; see sphinx-doc.org for details
-    │
-    ├── models             <- Trained and serialized models, model predictions, or model summaries
+    │   ├── ml-100k        <-  MovieLens dataset.
+    │   └── books          <-  Book crossing dataset.
     │
     ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-    │                         the creator's initials, and a short `-` delimited description, e.g.
-    │                         `1.0-jqp-initial-data-exploration`.
+    │                         and a short `_` delimited description, e.g.
+    │                         `1.0_initial_data_exploration`.
     │
-    ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
+    ├── requirements.txt   
     │
-    ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-    │   └── figures        <- Generated graphics and figures to be used in reporting
-    │
-    ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-    │                         generated with `pip freeze > requirements.txt`
-    │
-    ├── setup.py           <- makes project pip installable (pip install -e .) so src can be imported
-    ├── src                <- Source code for use in this project.
-    │   ├── __init__.py    <- Makes src a Python module
+    ├── recsys             <- Source code for use in this project.
     │   │
-    │   ├── data           <- Scripts to download or generate data
-    │   │   └── make_dataset.py
+    │   ├── data           <- Main Dataset class for pytorch loader
+    │   │   └── _dataset_.py
     │   │
-    │   ├── features       <- Scripts to turn raw data into features for modeling
-    │   │   └── build_features.py
+    │   ├── model          <- Class to train model, model itself 
+    │   │   ├── _model.py
+    │   │   └── _learner.py
     │   │
-    │   ├── models         <- Scripts to train models and then use trained models to make
-    │   │   │                 predictions
-    │   │   ├── predict_model.py
-    │   │   └── train_model.py
-    │   │
-    │   └── visualization  <- Scripts to create exploratory and results oriented visualizations
-    │       └── visualize.py
-    │
-    └── tox.ini            <- tox file with settings for running tox; see tox.testrun.org
-
-
+    │   └── visualization  <- Class to create exploratory and results oriented visualizations
+    │       └── _visualizer.py
 --------
