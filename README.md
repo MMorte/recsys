@@ -1,5 +1,5 @@
 # Recommender system
-Recommender system made in PyTorch. 
+Recommender system made in PyTorch with [learning rate finder](https://arxiv.org/abs/1506.01186) and [one cycle policy](https://arxiv.org/abs/1708.07120). 
 
 ## Datasets
 [MovieLens dataset](https://grouplens.org/datasets/movielens/) with 100k ratings. <br>
@@ -7,11 +7,11 @@ Recommender system made in PyTorch.
 
 ## Training a model
 <pre><code># Load modules for training
->>> from ncf.data import CollaborativeFilteringDataset
->>> from ncf.model import Learner
+>>> from recsys.data import RecommenderDataset
+>>> from recsys.model import Learner
 
 # Create a PyTorch DataLoader from csv
->>> data = CollaborativeFilteringDataset(dataset='ml-100k')
+>>> data = RecommenderDataset(dataset='ml-100k')
 
 # Initiate learner class
 >>> learn = Learner(n_epochs=5, data=data, y_range=(0.,5.5), weight_decay=5e-4)
@@ -20,6 +20,8 @@ Recommender system made in PyTorch.
 >>> learn.lr_find()
 Stopping early, the loss has diverged
 Learning rate search finished. See the graph with {Learner}.visualize.lr_finder()
+
+# Plot the learning rate
 >>> learn.visualize.lr_finder()
 </code></pre>
 ![Learning rate finder](img/lr_finder.PNG)

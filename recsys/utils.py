@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from typing import Tuple
-from recsys.data import CollaborativeFilteringDataset
+from recsys.data import RecommenderDataset
 
 
 class Books:
@@ -83,7 +83,7 @@ class Books:
         Tuple[dict, dict]
             user and item id mappings
         """
-        data = CollaborativeFilteringDataset(dataset="books")
+        data = RecommenderDataset(dataset="books")
         u_mapping = data.user_mapping
         i_mapping = data.item_mapping
         return u_mapping, i_mapping

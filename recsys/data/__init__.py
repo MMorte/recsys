@@ -1,4 +1,4 @@
-from ._dataset import CollaborativeFilteringDataset
+from ._dataset import RecommenderDataset
 
-__all__ = ["CollaborativeFilteringDataset"]
+__all__ = ["RecommenderDataset"]
 

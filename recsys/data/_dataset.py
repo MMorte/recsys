@@ -8,8 +8,8 @@ from typing import Tuple
 from pathlib import Path
 
 
-class CollaborativeFilteringDataset(Dataset):
-    """Collabarive Filtering dataset
+class RecommenderDataset(Dataset):
+    """RecommenderDataset dataset
     
     Parameters
     ----------
@@ -30,7 +30,7 @@ class CollaborativeFilteringDataset(Dataset):
         return len(self.df)
 
     def __repr__(self):
-        representation = f"CollaborativeFilteringDataset(users={self.n_users}, items={self.n_items}, interactions={len(self)})"
+        representation = f"RecommenderDataset(users={self.n_users}, items={self.n_items}, interactions={len(self)})"
         return representation
 
     def __getitem__(self, index):

@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader, SubsetRandomSampler
 from torch.optim.lr_scheduler import OneCycleLR
 from torch.optim import Adam, SGD
 from recsys.model._utils import ExponentialLR
-from recsys.data import CollaborativeFilteringDataset
+from recsys.data import RecommenderDataset
 from recsys.model import EmbeddingNet
 from recsys.visualization import Visualizer
 
@@ -16,7 +16,7 @@ from recsys.visualization import Visualizer
 class Learner:
     def __init__(
         self,
-        data: CollaborativeFilteringDataset,
+        data: RecommenderDataset,
         model: torch.nn.Module = EmbeddingNet,
         criterion=torch.nn.MSELoss,
         optimizer: torch.optim.Optimizer = Adam,
