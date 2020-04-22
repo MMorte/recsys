@@ -1,13 +1,10 @@
 import matplotlib.pyplot as plt
 
-from ncf.model import Learner
-
-
 class Visualizer:
-    def __init__(self, learner: Learner):
+    def __init__(self, learner):
         self.learner = learner
 
-    def plot_lr_finder(self, skip_start: int = 10, skip_end: int = 2):
+    def lr_finder(self, skip_start: int = 10, skip_end: int = 2):
         """Plots the learning rate range test.
         
         Parameters
@@ -42,9 +39,8 @@ class Visualizer:
         ax.set_ylabel("Loss")
         if fig is not None:
             plt.show()
-        return ax
 
-    def plot_lr(self):
+    def lr(self):
         """Plot the learning rate of a trained model as a function of number of iterations.
         
         Returns
@@ -65,9 +61,8 @@ class Visualizer:
         ax.set_ylabel("Learning rate")
         if fig is not None:
             plt.show()
-        return ax
 
-    def plot_loss(self):
+    def loss(self):
         """Plot train and validation loss as a function of number of epochs.
 
         Returns
@@ -89,4 +84,3 @@ class Visualizer:
         ax.set_ylabel("Loss")
         if fig is not None:
             plt.show()
-        return ax
