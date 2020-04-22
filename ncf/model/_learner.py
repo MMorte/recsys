@@ -1,4 +1,5 @@
 import torch
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -9,6 +10,7 @@ from torch.optim import Adam, SGD
 from ncf.model._utils import ExponentialLR
 from ncf.data import CollaborativeFilteringDataset
 from ncf.model import EmbeddingNet
+from ncf.visualization import Visualizer
 
 
 class Learner:
@@ -49,6 +51,9 @@ class Learner:
 
         # Obtain train, valid loaders
         self.train_loader, self.valid_loader = self._train_val_split()
+
+        # Visualizations
+        self.visualize = Visualizer(learner=self)
 
     def _init_model(
         self,
@@ -158,7 +163,7 @@ class Learner:
         num_iter: int = 100,
         end_lr: float = 10,
         smooth_f: float = 0,
-        diverge_th: float = 5,
+        diverge_th: float = 3,
     ):
         """Learning rate range test.
         The learning rate range test increases the learning rate in a pre-training run
@@ -175,7 +180,7 @@ class Learner:
         smooth_f : float, optional
             Loss smoothing factor within the [0, 1] interval. Disabled if set to 0, otherwise the loss is smoothed using exponential smoothing, by default 0
         diverge_th : float, optional
-            [description], by default 5
+            diverge threshold, if the epoch associated loss diverges from best loss we stop the finder, by default 3
         """
         # Test results
         self.history = {"lr": [], "loss": []}
@@ -204,8 +209,6 @@ class Learner:
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-                if (batch_num != 0) and (batch_num % 200 == 0):
-                    print(f"Epoch {epoch}, batch {batch_num}: {epoch_loss/batch_num}")
 
             # Update learning rate
             scheduler.step()
@@ -233,14 +236,10 @@ class Learner:
                 break
 
         print(
-            "Learning rate search finished. See the graph with {Visualizer}.plot_lr_finder()"
+            "Learning rate search finished. See the graph with {Learner}.visualize.lr_finder()"
         )
 
     def fit(self, learning_rate: Tuple[float, float]):
-        # Update learning rates
-        min_lr = learning_rate[0]
-        max_lr = learning_rate[1]
-        self.learning_rate = min_lr
         # Capture learning errors
         self.train_val_error = {"train": [], "validation": [], "lr": []}
         self._init_model(
@@ -250,7 +249,7 @@ class Learner:
         # Setup one cycle policy
         scheduler = OneCycleLR(
             optimizer=self.optimizer,
-            max_lr=max_lr,
+            max_lr=learning_rate,
             steps_per_epoch=len(self.train_loader),
             epochs=self.n_epochs,
             anneal_strategy="cos",
@@ -292,10 +291,10 @@ class Learner:
             val_err = validation_loss / batch_num
             self.train_val_error["validation"].append(val_err)
 
-            # Debugging
-            print(
-                f"Epoch: {epoch + 1}\nTrain loss: {train_err}\nValidation loss: {val_err}.\n"
-            )
+        return pd.DataFrame(data={
+            'Train error' : self.train_val_error['train'],
+            'Validation error': self.train_val_error['validation']
+        })
 
     def _forward_pass(self, samples: Tuple[torch.Tensor, torch.Tensor, torch.Tensor]):
         # Fetch tensors for users, items and ratings
