@@ -4,16 +4,15 @@ import numpy as np
 from typing import Tuple
 from ._utils import Embedding
 from ..data._dataset import Dataset
-from ._utils import RMSELoss
 
 
 class EmbeddingNet(torch.nn.Module):
     """Dot model for collaborative filtering
-    Creates a simple model with Embedding weights and biases for n_users and n_items, with n_factors latent factors.
+    Creates a simple model with Embedding weights and biases for n_users and n_items, with emb_size latent factors.
     Takes the dot product of the embeddings and adds the bias, then if y_range is specified, feed the result to a sigmoid rescaled to go from y_range[0] to y_range[1].
     Parameters
     ----------
-    n_factors : int
+    emb_size : int
         Number of factors (embedding size)
     n_users : int
         Number of users
@@ -25,7 +24,7 @@ class EmbeddingNet(torch.nn.Module):
 
     def __init__(
         self,
-        n_factors: int,
+        emb_size: int,
         n_users: int,
         n_items: int,
         y_range: Tuple[float, float] = None,
@@ -36,21 +35,21 @@ class EmbeddingNet(torch.nn.Module):
         (self.u_weight, self.i_weight, self.u_bias, self.i_bias) = [
             Embedding(*o)
             for o in [
-                (n_users, n_factors),
-                (n_items, n_factors),
+                (n_users, emb_size),
+                (n_items, emb_size),
                 (n_users, 1),
                 (n_items, 1),
             ]
         ]
 
-    def forward(self, users: torch.LongTensor, items: torch.LongTensor) -> torch.Tensor:
+    def forward(self, users: torch.Tensor, items: torch.Tensor) -> torch.Tensor:
         # User-item dot product
         dot = self.u_weight(users) * self.i_weight(items)
         # Add bias
-        res = dot.sum(1) + self.u_bias(users).squeeze() + self.i_bias(items).squeeze()
+        result = dot.sum(1) + self.u_bias(users).squeeze() + self.i_bias(items).squeeze()
         # Scale if y_range is specified
         if self.y_range is None:
-            return res
+            return result
         return (
-            torch.sigmoid(res) * (self.y_range[1] - self.y_range[0]) + self.y_range[0]
+            torch.sigmoid(result) * (self.y_range[1] - self.y_range[0]) + self.y_range[0]
         )
